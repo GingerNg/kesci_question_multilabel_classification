@@ -1,5 +1,6 @@
 import numpy as np
-import pandas pd
+import pandas as pd
+
 
 def df2np_array(pd_series):
     """[df["label"] --> series]
@@ -31,7 +32,7 @@ def dict2df(d):
     return pd.DataFrame(d)
 
 
-def list2df(datas,names):
+def list2df(datas, names):
     """[summary]
 
     Args:

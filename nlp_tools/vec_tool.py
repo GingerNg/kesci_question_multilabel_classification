@@ -2,7 +2,7 @@ import codecs
 import numpy as np
 
 
-def load_pretrained_vec(pretrained_path,vec_len):
+def load_pretrained_vec(pretrained_path, vec_len):
     pre_trained = {}
     for i, line in enumerate(codecs.open(pretrained_path, 'r', 'utf-8')):
         line = line.rstrip().split()
@@ -14,7 +14,7 @@ def load_pretrained_vec(pretrained_path,vec_len):
     return pre_trained
 
 
-char_pre_trained = load_pretrained_vec("/home/ginger/Projects/StaticResource/char_wiki_100.utf8",vec_len=100)
+char_pre_trained = None
 
 # word_pre_trained = load_pretrained_vec("/opt/project/Jupyter/StaticFile/sgns.financial.word",vec_len=300)
 
@@ -27,10 +27,10 @@ def resize_weight(keywords):
     a = 0.0
     new_ks = []
     for k in keywords:
-#         print(k)
-        a +=k[1]
+        #         print(k)
+        a += k[1]
     for k in keywords:
-        new_ks.append((k[0],k[1]/a))
+        new_ks.append((k[0], k[1]/a))
     return new_ks
 
 
@@ -44,6 +44,10 @@ def lookup(chars):
     Returns:
         [type]: [description]
     """
+    global char_pre_trained
+    if char_pre_trained is None:
+        char_pre_trained = load_pretrained_vec(
+            "/home/ginger/Projects/StaticResource/char_wiki_100.utf8", vec_len=100)
     new_array = np.zeros((100))
     res = []
     chars = chars.replace(" ", "")
@@ -61,11 +65,12 @@ def lookup(chars):
     # return len(res.sum(axis=0))
     return res.sum(axis=0)
 
+
 def char_matrix2vec(matrix):
     return matrix.sum(axis=1)
 
 
-def weight_char_embed(chars, top_k=5,vec_len=100):
+def weight_char_embed(chars, top_k=5, vec_len=100):
     """
     短语向量表示：加权词向量
     """
@@ -79,12 +84,12 @@ def weight_char_embed(chars, top_k=5,vec_len=100):
     for keyword in keywords:
         for char in keyword[0]:
             if char in char_pre_trained.keys():
-                vec +=char_pre_trained[char]*keyword[1]
+                vec += char_pre_trained[char]*keyword[1]
     return vec
 
 
 def batch_wce(lines):
-    return list(map(weight_char_embed,lines))
+    return list(map(weight_char_embed, lines))
 
 
 if __name__ == "__main__":
