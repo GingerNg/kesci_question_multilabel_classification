@@ -1,3 +1,4 @@
+from sklearn import utils
 from fasttext import train_supervised
 # import fasttext
 from nlp_tools.word_utils import segment
@@ -5,21 +6,25 @@ from corpus_preprocess.industry_corpus_process import process_corpus_fasttext
 from models.ft import print_results
 import pymongo
 import pandas as pd
-from utils import file_utils
+from utils import file_utils, data_utils
 
 
-client = pymongo.MongoClient('192.168.235.223', 27017)
-db = client['nlp_db']
-baidu_text = db['baidu_text']
+# client = pymongo.MongoClient('192.168.235.223', 27017)
+# db = client['nlp_db']
+# baidu_text = db['baidu_text']
 
-texts = list(baidu_text.find())
+raw_data_path = "data/raw_data/baidu/nlp_db.baidu_text.csv"
+# texts = data_utils.df2list(pd.read_csv(raw_data_path))
+texts = pd.read_csv(raw_data_path)
+# texts = list(text_pd)
+# print(texts[0])
+#texts = list(baidu_text.find())
 
 data_pd = process_corpus_fasttext(texts)
 
 data_pd.to_csv("./data/fasttext/industry_ft.csv")
 
 
-from sklearn import utils
 utils.shuffle(data_pd)
 train_len = data_pd.shape[0]//5 * 4
 train_df = data_pd[0:train_len]

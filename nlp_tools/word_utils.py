@@ -10,7 +10,10 @@ from utils.file_utils import readFile
 
 def segment(mytext):
     """中文分词"""
-    return " ".join(jieba.cut(mytext))
+    if isinstance(mytext, str) and len(mytext)>0:
+        return " ".join(jieba.cut(mytext))
+    else:
+        return ""
     # return jieba.cut(mytext)
 
 
