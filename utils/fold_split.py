@@ -2,17 +2,25 @@ from sklearn.model_selection import train_test_split
 from sklearn import utils
 import random
 
+
 class Slicer(object):
-    
+    """[切片器, 分片]
+
+    Args:
+        object ([type]): [description]
+    """
+
     def split(self):
         pass
 
+
 class SklearnSlicer(Slicer):
     def split(self, data, fea_col_name, label_col_name):
-        #划分训练集和测试集
+        # 划分训练集和测试集
         X = data[fea_col_name]
         y = data[label_col_name]
-        X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=1)
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=1)
         return X_train, X_test, y_train, y_test
 
 

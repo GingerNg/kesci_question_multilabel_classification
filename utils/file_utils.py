@@ -26,5 +26,11 @@ def readBunch(path):
 
 
 def writeBunch(path, bunchFile):
+    """[bunch: 大量; 大批;]
+
+    Args:
+        path ([type]): [description]
+        bunchFile ([type]): [description]
+    """
     with open(path, 'wb') as file:
         pickle.dump(bunchFile, file)
