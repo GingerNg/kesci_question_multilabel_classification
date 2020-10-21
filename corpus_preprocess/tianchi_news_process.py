@@ -1,13 +1,19 @@
+import os, sys
+current_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+print(current_path)
+sys.path.append(current_path)
+os.chdir("..")
 import pandas as pd
 import logging
-import os
 import numpy as np
 import pickle
 from utils import file_utils
-os.chdir("..")
+from utils.model_utils import use_cuda, device
+import torch
+
 
 # 语料相关配置
-fold_data_path = "./data/textcnn/data/fold_data.pl"
+fold_data_path = os.path.join(current_path, "data/textcnn/data/fold_data.pl")
 
 
 def process_corpus_fasttext(data_df):
@@ -127,7 +133,7 @@ def all_data2fold(fold_num, num=10000):
 
 
 def batch_slice(data, batch_size):
-    batch_num = int(np.ceil(len(data) / float(batch_size))) # ceil 向上取整
+    batch_num = int(np.ceil(len(data) / float(batch_size)))  # ceil 向上取整
     for i in range(batch_num):
         cur_batch_size = batch_size if i < batch_num - 1 else len(data) - batch_size * i
         docs = [data[i * batch_size + b] for b in range(cur_batch_size)]  ## ???
@@ -205,6 +211,47 @@ def get_examples(data, vocab, max_sent_len=256, max_segment=8):
 
     logging.info('Total %d docs.' % len(examples))
     return examples
+
+
+
+def batch2tensor(batch_data):
+    '''
+        [[label, doc_len, [[sent_len, [sent_id0, ...], [sent_id1, ...]], ...]]
+    '''
+    batch_size = len(batch_data)
+    doc_labels = []
+    doc_lens = []
+    doc_max_sent_len = []
+    for doc_data in batch_data:
+        doc_labels.append(doc_data[0])
+        doc_lens.append(doc_data[1])
+        sent_lens = [sent_data[0] for sent_data in doc_data[2]]
+        max_sent_len = max(sent_lens)
+        doc_max_sent_len.append(max_sent_len)
+
+    max_doc_len = max(doc_lens)
+    max_sent_len = max(doc_max_sent_len)
+
+    batch_inputs1 = torch.zeros((batch_size, max_doc_len, max_sent_len), dtype=torch.int64)
+    batch_inputs2 = torch.zeros((batch_size, max_doc_len, max_sent_len), dtype=torch.int64)
+    batch_masks = torch.zeros((batch_size, max_doc_len, max_sent_len), dtype=torch.float32)
+    batch_labels = torch.LongTensor(doc_labels)
+
+    for b in range(batch_size):
+        for sent_idx in range(doc_lens[b]):
+            sent_data = batch_data[b][2][sent_idx]
+            for word_idx in range(sent_data[0]):
+                batch_inputs1[b, sent_idx, word_idx] = sent_data[1][word_idx]
+                batch_inputs2[b, sent_idx, word_idx] = sent_data[2][word_idx]
+                batch_masks[b, sent_idx, word_idx] = 1
+
+    if use_cuda:
+        batch_inputs1 = batch_inputs1.to(device)
+        batch_inputs2 = batch_inputs2.to(device)
+        batch_masks = batch_masks.to(device)
+        batch_labels = batch_labels.to(device)
+
+    return (batch_inputs1, batch_inputs2, batch_masks), batch_labels
 
 
 if __name__ == "__main__":

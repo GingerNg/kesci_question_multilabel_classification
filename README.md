@@ -1,4 +1,4 @@
-
+# pytorch_text_classification
 
 https://www.kesci.com/home/competition/5f2d0ea1b4ac2e002c164d82/content/1
 
@@ -41,3 +41,8 @@ eda --> 选择模型1 --> **根据模型要求处理数据，特征编码，标�
 train：
 epoch(所有数据) -> batch/slice（随机选择固定size的数据）
 https://tianchi.aliyun.com/notebook-ai/detail?spm=5176.12586969.1002.24.64063dadx0bgpr&postId=118258
+https://tianchi.aliyun.com/forum/postDetail?spm=5176.12586969.1002.27.6406224eBph8DC&postId=122736
+
+# 模型放置在gpu上进行计算
+if torch.cuda.is_available():
+    model.cuda()

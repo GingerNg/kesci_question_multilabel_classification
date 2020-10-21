@@ -1,11 +1,11 @@
 # build vocab
 from collections import Counter
-from transformers import BasicTokenizer
+# from transformers import BasicTokenizer
 import logging
 import numpy as np
 
 
-basic_tokenizer = BasicTokenizer()
+# basic_tokenizer = BasicTokenizer()
 
 
 class Vocab():
