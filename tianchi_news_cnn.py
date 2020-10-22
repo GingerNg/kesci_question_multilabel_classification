@@ -13,7 +13,7 @@ fold_data = file_utils.readBunch(path=fold_data_path)
 fold_id = 9
 
 # dev
-dev_data = fold_data[fold_id]
+Dev_data = fold_data[fold_id]
 
 # train
 train_texts = []
@@ -30,7 +30,7 @@ test_data_path = 'data/raw_data/tianchi_news/test_a.csv'
 test_data_file = os.path.join(current_path, test_data_path)
 f = pd.read_csv(test_data_file, sep='\t', encoding='UTF-8')
 texts = f['text'].tolist()
-test_data = {'label': [0] * len(texts), 'text': texts}
+Test_data = {'label': [0] * len(texts), 'text': texts}
 
 
 clip = 5.0
@@ -56,13 +56,20 @@ vocab = Vocab(Train_data)
 model = Model(vocab)
 optimizer = Optimizer(model.all_parameters)
 criterion = nn.CrossEntropyLoss()
+
+# 生成模型可处理的格式
 train_data = get_examples(Train_data, vocab)
+test_data = get_examples(Test_data, vocab)
+dev_data = get_examples(Dev_data, vocab)
 batch_num = int(np.ceil(len(train_data) / float(train_batch_size)))
 if __name__ == "__main__":
+    best_train_f1, best_dev_f1 = 0, 0
+    early_stop = -1
+    EarlyStopEpochs = 3  # 当多个epoch，dev的指标都没有提升，则早停
     # train
     for epoch in range(1, epochs + 1):
         optimizer.zero_grad()
-        model.train()
+        model.train()  # 启用 BatchNormalization 和 Dropou
         overall_losses = 0
         losses = 0
         batch_idx = 1
@@ -92,8 +99,45 @@ if __name__ == "__main__":
         print(epoch)
         overall_losses /= batch_num
         overall_losses = reformat(overall_losses, 4)
-        score, f1 = get_score(y_true, y_pred)
+        score, train_f1 = get_score(y_true, y_pred)
         if set(y_true) == set(y_pred):
             report = classification_report(y_true, y_pred, digits=4, target_names=vocab.target_names)
             # logging.info('\n' + report)
+
+        # eval
+        model.eval()  # 不启用 BatchNormalization 和 Dropout
+        data = dev_data
+        y_pred = []
+        y_true = []
+        with torch.no_grad():
+            for batch_data in data_iter(data, test_batch_size, shuffle=False):
+                torch.cuda.empty_cache()
+                batch_inputs, batch_labels = batch2tensor(batch_data)
+                batch_outputs = model(batch_inputs)
+                y_pred.extend(torch.max(batch_outputs, dim=1)[1].cpu().numpy().tolist())
+                y_true.extend(batch_labels.cpu().numpy().tolist())
+
+            score, dev_f1 = get_score(y_true, y_pred)
+
+        if best_dev_f1 <= dev_f1:
+            best_dev_f1 = dev_f1
+            early_stop = 0
+            best_train_f1 = train_f1
+        else:
+            early_stop += 1
+            if early_stop == EarlyStopEpochs:
+                break
+            # during_time = time.time() - start_time
+
+            # if test:
+            #     df = pd.DataFrame({'label': y_pred})
+            #     df.to_csv(save_test, index=False, sep=',')
+            # else:
+            #     logging.info(
+            #         '| epoch {:3d} | dev | score {} | f1 {} | time {:.2f}'.format(epoch, score, f1,
+            #                                                                   during_time))
+            #     if set(y_true) == set(y_pred) and self.report:
+            #         report = classification_report(y_true, y_pred, digits=4, target_names=self.target_names)
+            #         logging.info('\n' + report)
+
 

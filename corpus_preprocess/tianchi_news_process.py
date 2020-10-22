@@ -192,7 +192,19 @@ def sentence_split(text, vocab, max_sent_len=256, max_segment=16):
 
 
 def get_examples(data, vocab, max_sent_len=256, max_segment=8):
-    # dict --> list
+    """[summary]
+        dict --> list
+        word--> id
+    Args:
+        data ([type]): [description]
+        vocab ([type]): [description]
+        max_sent_len (int, optional): [description]. Defaults to 256.
+        max_segment (int, optional): [description]. Defaults to 8.
+
+    Returns:
+        [type]: [description]
+    """
+
     label2id = vocab.label2id
     examples = []
 

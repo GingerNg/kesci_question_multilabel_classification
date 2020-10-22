@@ -46,3 +46,7 @@ https://tianchi.aliyun.com/forum/postDetail?spm=5176.12586969.1002.27.6406224eBp
 # 模型放置在gpu上进行计算
 if torch.cuda.is_available():
     model.cuda()
+
+
+@todo
+结合知识图谱的文本分类
