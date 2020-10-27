@@ -138,15 +138,17 @@ def batch_slice(data, batch_size):
         cur_batch_size = batch_size if i < batch_num - 1 else len(data) - batch_size * i
         docs = [data[i * batch_size + b] for b in range(cur_batch_size)]  ## ???
 
-        yield docs
+        yield docs   #　返回一个batch的数据
 
 
 def data_iter(data, batch_size, shuffle=True, noise=1.0):
+    """[    randomly permute data, then sort by source length, and partition into batches
+    ensure that the length of  sentences in each batch]
+        input:
+        [sent_len, word_ids, extword_ids]
+    Yields:
+        [type]: [description]
     """
-    randomly permute data, then sort by source length, and partition into batches
-    ensure that the length of  sentences in each batch
-    """
-
     batched_data = []
     if shuffle:
         np.random.shuffle(data)
@@ -169,6 +171,17 @@ def data_iter(data, batch_size, shuffle=True, noise=1.0):
 
 # build dataset
 def sentence_split(text, vocab, max_sent_len=256, max_segment=16):
+    """[summary]
+
+    Args:
+        text ([type]): [description]
+        vocab ([type]): [description]
+        max_sent_len (int, optional): [description]. Defaults to 256.
+        max_segment (int, optional): [description]. Defaults to 16.
+
+    Returns:
+        [type]: [[句子长度， 词list]]
+    """
     words = text.strip().split()
     document_len = len(words)
 
@@ -196,13 +209,13 @@ def get_examples(data, vocab, max_sent_len=256, max_segment=8):
         dict --> list
         word--> id
     Args:
-        data ([type]): [description]
+        data ([type]): [    label:[], text:[[],...,[]]   ]
         vocab ([type]): [description]
         max_sent_len (int, optional): [description]. Defaults to 256.
         max_segment (int, optional): [description]. Defaults to 8.
 
     Returns:
-        [type]: [description]
+        [list]: [label_id, ]
     """
 
     label2id = vocab.label2id
@@ -218,12 +231,11 @@ def get_examples(data, vocab, max_sent_len=256, max_segment=8):
         for sent_len, sent_words in sents_words:
             word_ids = vocab.word2id(sent_words)
             extword_ids = vocab.extword2id(sent_words)
-            doc.append([sent_len, word_ids, extword_ids])
-        examples.append([id, len(doc), doc])
+            doc.append([sent_len, word_ids, extword_ids])  # sent_len 句子长度：即句子中词个数
+        examples.append([id, len(doc), doc])   # len(doc): 文档中句子的个数
 
     logging.info('Total %d docs.' % len(examples))
     return examples
-
 
 
 def batch2tensor(batch_data):
@@ -238,12 +250,13 @@ def batch2tensor(batch_data):
         doc_labels.append(doc_data[0])
         doc_lens.append(doc_data[1])
         sent_lens = [sent_data[0] for sent_data in doc_data[2]]
-        max_sent_len = max(sent_lens)
+        max_sent_len = max(sent_lens)  #　最大句子长度
         doc_max_sent_len.append(max_sent_len)
 
-    max_doc_len = max(doc_lens)
+    max_doc_len = max(doc_lens)  # 最大文档长度（句子个数）
     max_sent_len = max(doc_max_sent_len)
 
+    # 初始化矩阵: batch_inputs1 batch_inputs2 双输入
     batch_inputs1 = torch.zeros((batch_size, max_doc_len, max_sent_len), dtype=torch.int64)
     batch_inputs2 = torch.zeros((batch_size, max_doc_len, max_sent_len), dtype=torch.int64)
     batch_masks = torch.zeros((batch_size, max_doc_len, max_sent_len), dtype=torch.float32)
@@ -252,7 +265,7 @@ def batch2tensor(batch_data):
     for b in range(batch_size):
         for sent_idx in range(doc_lens[b]):
             sent_data = batch_data[b][2][sent_idx]
-            for word_idx in range(sent_data[0]):
+            for word_idx in range(sent_data[0]):   #　sent_data[0]: 句子长度
                 batch_inputs1[b, sent_idx, word_idx] = sent_data[1][word_idx]
                 batch_inputs2[b, sent_idx, word_idx] = sent_data[2][word_idx]
                 batch_masks[b, sent_idx, word_idx] = 1

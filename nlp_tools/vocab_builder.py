@@ -7,7 +7,7 @@ import numpy as np
 
 # basic_tokenizer = BasicTokenizer()
 
-
+#　词表
 class Vocab():
     def __init__(self, train_data):
         self.min_count = 5
@@ -54,6 +54,14 @@ class Vocab():
             self.target_names.append(label2name[label])
 
     def load_pretrained_embs(self, embfile):
+        """[summary]
+
+        Args:
+            embfile ([type]): [description]
+
+        Returns:
+            [list]: [返回词向量， 词向量的索引=词在词表中的id]
+        """
         with open(embfile, encoding='utf-8') as f:
             lines = f.readlines()
             items = lines[0].split()

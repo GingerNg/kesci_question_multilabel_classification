@@ -1,0 +1,67 @@
+{
+    "root": {
+        "data": {
+            "id": "c6mo3a79nns0",
+            "created": 1603699679731,
+            "text": "MainTopic"
+        },
+        "children": [
+            {
+                "data": {
+                    "id": "c6mo7n3yfs00",
+                    "created": 1603700021286,
+                    "text": "Model",
+                    "layout_mind_offset": {
+                        "x": 23.749999646097592,
+                        "y": -28.74999957159173
+                    }
+                },
+                "children": []
+            },
+            {
+                "data": {
+                    "id": "c6mo7w245nc0",
+                    "created": 1603700040766,
+                    "text": "Optimizer",
+                    "layout_mind_offset": {
+                        "x": 2.499999962747154,
+                        "y": -26.249999608844632
+                    }
+                },
+                "children": []
+            },
+            {
+                "data": {
+                    "id": "c6mo845znm80",
+                    "created": 1603700058414,
+                    "text": "evaluation",
+                    "layout_mind_offset": {
+                        "x": 568.7499915249648,
+                        "y": 127.49999810010189
+                    }
+                },
+                "children": [
+                    {
+                        "data": {
+                            "id": "c6mo93e5p7k0",
+                            "created": 1603700135095,
+                            "text": "Loss"
+                        },
+                        "children": []
+                    },
+                    {
+                        "data": {
+                            "id": "c6mo97gdhqo0",
+                            "created": 1603700143937,
+                            "text": "metric"
+                        },
+                        "children": []
+                    }
+                ]
+            }
+        ]
+    },
+    "template": "default",
+    "theme": "fresh-blue",
+    "version": "1.4.43"
+}

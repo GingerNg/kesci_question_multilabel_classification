@@ -44,8 +44,9 @@ train_batch_size = 128
 save_model = './cnn.bin'
 save_test = './cnn.csv'
 
-from models.text_cnn import Optimizer, Model
-from models.vocab_builder import Vocab
+from models.text_cnn import Model
+from models.optimzers import Optimizer
+from nlp_tools.vocab_builder import Vocab
 from corpus_preprocess.tianchi_news_process import data_iter
 from evaluation_index.scores import get_score, reformat
 import numpy as np
@@ -54,14 +55,16 @@ from sklearn.metrics import classification_report
 step = 0
 vocab = Vocab(Train_data)
 model = Model(vocab)
-optimizer = Optimizer(model.all_parameters)
-criterion = nn.CrossEntropyLoss()
+optimizer = Optimizer(model.all_parameters, None)  # 优化器
+
+#　loss
+criterion = nn.CrossEntropyLoss()  # obj
 
 # 生成模型可处理的格式
 train_data = get_examples(Train_data, vocab)
 test_data = get_examples(Test_data, vocab)
 dev_data = get_examples(Dev_data, vocab)
-batch_num = int(np.ceil(len(train_data) / float(train_batch_size)))
+batch_num = int(np.ceil(len(train_data) / float(train_batch_size)))  # 一个epoch的batch个数
 if __name__ == "__main__":
     best_train_f1, best_dev_f1 = 0, 0
     early_stop = -1
@@ -69,7 +72,7 @@ if __name__ == "__main__":
     # train
     for epoch in range(1, epochs + 1):
         optimizer.zero_grad()
-        model.train()  # 启用 BatchNormalization 和 Dropou
+        model.train()  # 启用 BatchNormalization 和 Dropout
         overall_losses = 0
         losses = 0
         batch_idx = 1
@@ -125,7 +128,7 @@ if __name__ == "__main__":
             best_train_f1 = train_f1
         else:
             early_stop += 1
-            if early_stop == EarlyStopEpochs:
+            if early_stop == EarlyStopEpochs:  # 达到早停次数，则停止训练
                 break
             # during_time = time.time() - start_time
 

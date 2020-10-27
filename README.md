@@ -34,19 +34,26 @@ Question  Sentence	string	提问内容
 类别极度不平衡
 
 @20200913
-eda --> 选择模型1 --> **根据模型要求处理数据，特征编码，标签编码(corpus_preprocess)** --> 分fold 交叉验证 --> 调参
+eda --> 选择模型1(model+optimizer+Loss) --> **根据模型要求处理数据，特征编码，标签编码(corpus_preprocess)** --> 分fold 交叉验证 --> 调参
         选择模型2...
 
 @20201018
 train：
 epoch(所有数据) -> batch/slice（随机选择固定size的数据）
-https://tianchi.aliyun.com/notebook-ai/detail?spm=5176.12586969.1002.24.64063dadx0bgpr&postId=118258
-https://tianchi.aliyun.com/forum/postDetail?spm=5176.12586969.1002.27.6406224eBph8DC&postId=122736
+[Datawhale零基础入门NLP赛事 - Task5 基于深度学习的文本分类2-2TextCNN](https://tianchi.aliyun.com/notebook-ai/detail?spm=5176.12586969.1002.24.64063dadx0bgpr&postId=118258)
+[【详细注释+流程讲解】基于深度学习的文本分类 TextCNN](https://tianchi.aliyun.com/forum/postDetail?spm=5176.12586969.1002.27.6406224eBph8DC&postId=122736)
+[Datawhale零基础入门NLP赛事 - Task6 基于深度学习的文本分类3-BERT](https://tianchi.aliyun.com/notebook-ai/detail?spm=5176.12586969.1002.75.6406224ek2VNsN&postId=118260)
+
+
+转换bert的tensorflow模型为pytorch的模型
+https://github.com/huggingface/transformers/tree/master/src/transformers
+
 
 # 模型放置在gpu上进行计算
 if torch.cuda.is_available():
     model.cuda()
 
+doc -- sentence -- word
 
 @todo
 结合知识图谱的文本分类

@@ -31,7 +31,7 @@ class Attention(nn.Module):
         # linear
         key = torch.matmul(batch_hidden, self.weight) + self.bias  # b x len x hidden
 
-        # compute attention
+        # compute attention  (len, hidden) *  hidden ---> (len)
         outputs = torch.matmul(key, self.query)  # b x len
 
         masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32))
@@ -47,6 +47,11 @@ class Attention(nn.Module):
         return batch_outputs, attn_scores
 
 class WordCNNEncoder(nn.Module):
+    """[word cnn 编码， seq_len,word_dim ==> seq_len-filter_size+1 , out_channel == > out_channel,1]
+
+    Args:
+        nn ([type]): [description]
+    """
     def __init__(self, vocab):
         super(WordCNNEncoder, self).__init__()
         self.dropout = nn.Dropout(dropout)
@@ -62,7 +67,7 @@ class WordCNNEncoder(nn.Module):
         logging.info("Load extword embed: words %d, dims %d." %
                      (extword_size, word_dims))
 
-        # # 这个 Embedding 层是不可学习的
+        # # 这个 Embedding 层是不可学习的  <=== requires_grad = False
         self.extword_embed = nn.Embedding(
             extword_size, word_dims, padding_idx=0)
         self.extword_embed.weight.data.copy_(torch.from_numpy(extword_embed))
@@ -102,7 +107,7 @@ class WordCNNEncoder(nn.Module):
             # 其中 o 表示输出的长度
             # k 表示卷积核大小
             # s 表示步长，这里为 1
-            filter_height = sent_len - self.filter_sizes[i] + 1
+            filter_height = sent_len - self.filter_sizes[i] + 1  # 卷积后尺寸的变化
             # conv：sentence_num * out_channel * filter_height * 1
             conv = self.convs[i](batch_embed)
             hidden = F.relu(conv)
@@ -131,6 +136,11 @@ sent_num_layers = 2
 
 
 class SentEncoder(nn.Module):
+    """[句子编码]
+
+    Args:
+        nn ([type]): [description]
+    """
     def __init__(self, sent_rep_size):
         super(SentEncoder, self).__init__()
         self.dropout = nn.Dropout(dropout)
@@ -178,11 +188,11 @@ class Model(nn.Module):
             self.to(device)
 
         if len(parameters) > 0:
-            self.all_parameters["basic_parameters"] = parameters
+            self.all_parameters["basic_parameters"] = parameters  # key(str): list
 
         logging.info('Build model with cnn word encoder, lstm sent encoder.')
 
-        para_num = sum([np.prod(list(p.size())) for p in self.parameters()])
+        para_num = sum([np.prod(list(p.size())) for p in self.parameters()])  # 参数总数
         logging.info('Model param num: %.2f M.' % (para_num / 1e6))
 
     def forward(self, batch_inputs):
@@ -206,47 +216,3 @@ class Model(nn.Module):
         batch_outputs = self.out(doc_reps)  # b x num_labels
 
         return batch_outputs
-
-
-# build optimizer
-learning_rate = 2e-4
-decay = .75
-decay_step = 1000
-
-
-class Optimizer:
-    def __init__(self, model_parameters):
-        self.all_params = []
-        self.optims = []
-        self.schedulers = []
-
-        for name, parameters in model_parameters.items():
-            if name.startswith("basic"):
-                optim = torch.optim.Adam(parameters, lr=learning_rate)
-                self.optims.append(optim)
-
-                l = lambda step: decay ** (step // decay_step)
-                scheduler = torch.optim.lr_scheduler.LambdaLR(optim, lr_lambda=l)
-                self.schedulers.append(scheduler)
-                self.all_params.extend(parameters)
-
-            else:
-                Exception("no nameed parameters.")
-
-        self.num = len(self.optims)
-
-    def step(self):
-        for optim, scheduler in zip(self.optims, self.schedulers):
-            optim.step()
-            scheduler.step()
-            optim.zero_grad()
-
-    def zero_grad(self):
-        for optim in self.optims:
-            optim.zero_grad()
-
-    def get_lr(self):
-        lrs = tuple(map(lambda x: x.get_lr()[-1], self.schedulers))
-        lr = ' %.5f' * self.num
-        res = lr % lrs
-        return res
