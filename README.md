@@ -37,6 +37,8 @@ Question  Sentence	string	提问内容
 eda --> 选择模型1(model+optimizer+Loss) --> **根据模型要求处理数据，特征编码，标签编码(corpus_preprocess)** --> 分fold 交叉验证 --> 调参
         选择模型2...
 
+先分fold，再进行数据处理
+
 @20201018
 train：
 epoch(所有数据) -> batch/slice（随机选择固定size的数据）

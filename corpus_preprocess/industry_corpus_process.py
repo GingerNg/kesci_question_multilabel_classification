@@ -1,7 +1,8 @@
 import random
 import numpy as np
 import pandas as pd
-from keras.utils.np_utils import *
+from collections import Counter
+# from keras.utils.np_utils import *
 # from nlp_tools import vec_tool
 from nlp_tools.word_utils import segment
 
@@ -23,6 +24,48 @@ Industries = ['互联网',
               '金融投资',
               '餐饮行业']
 
+
+class LabelEncoer():  # 标签编码
+    def __init__(self, labels):
+        super().__init__()
+        self.unk = 1
+        self._id2label = range(len(labels))
+        self.target_names = labels
+        def reverse(x): return dict(zip(x, range(len(x))))  # 词与id的映射
+        self._label2id = reverse(self._id2label)
+        # self._id2name =
+
+    def label2id(self, xs):
+        if isinstance(xs, list):
+            return [self._label2id.get(x, self.unk) for x in xs]
+        return self._label2id.get(xs, self.unk)
+
+    def name2label(self, x):
+        return self.target_names.index(x)
+
+    def label2name(self, xs):
+        if isinstance(xs, list):
+            return [self.target_names[x] for x in xs]
+        return self.target_names[xs]
+
+    @property
+    def label_size(self):
+        return len(self._id2label)
+
+        # process label
+        # label2name = {0: '科技', 1: '股票', 2: '体育', 3: '娱乐', 4: '时政',
+        #               5: '社会', 6: '教育', 7: '财经', 8: '家居', 9: '游戏',
+        #               10: '房产', 11: '时尚', 12: '彩票', 13: '星座'}
+
+        # self.label_counter = Counter(data['label'])
+
+        # for label in range(len(self.label_counter)):
+        #     count = self.label_counter[label]
+        #     self._id2label.append(label)
+        #     self.target_names.append(label2name[label])
+
+
+label_encoder = LabelEncoer(Industries)
 
 def process_corpus_fasttext(data_df):
     """
@@ -58,3 +101,25 @@ def process_corpus_fasttext(data_df):
     name = ['sentence']
     data_pd = pd.DataFrame(columns=name, data=datas)
     return data_pd
+
+
+def process_corpus_dl(data_df):
+    texts = []
+    labels = []
+
+    def _process(line):
+        # print(line)
+        words = segment(line["content"])
+        if len(words) > 1:
+            keyword = line["keyword"]
+            labels.append(label_encoder.name2label(keyword))
+            texts.append(words)
+    if isinstance(data_df, list):
+        for line in data_df:
+            _process(line)
+    else:
+        for _, row in data_df.iterrows():
+            # print(type(row))
+            _process(row.to_dict())
+
+    return texts, labels

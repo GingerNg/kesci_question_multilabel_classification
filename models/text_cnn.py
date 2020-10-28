@@ -6,8 +6,8 @@ import numpy as np
 import os
 from utils.model_utils import use_cuda, device
 current_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-# 读取训练好的词向量文件
-word2vec_path = os.path.join(current_path, 'data/emb/word2vec.txt')
+
+word2vec_path = os.path.join(current_path, 'data/emb/industry_vec.txt')
 dropout = 0.15
 
 
@@ -46,23 +46,26 @@ class Attention(nn.Module):
 
         return batch_outputs, attn_scores
 
+
 class WordCNNEncoder(nn.Module):
     """[word cnn 编码， seq_len,word_dim ==> seq_len-filter_size+1 , out_channel == > out_channel,1]
 
     Args:
         nn ([type]): [description]
     """
-    def __init__(self, vocab):
+    def __init__(self, vocab, emb_vocab):
         super(WordCNNEncoder, self).__init__()
         self.dropout = nn.Dropout(dropout)
-        self.word_dims = 100  # 词向量的长度是 100 维
+        self.word_dims = emb_vocab.word_dim  # 词向量的长度是 100 维
+
         # padding_idx 表示当取第 0 个词时，向量全为 0
         # 这个 Embedding 层是可学习的
         self.word_embed = nn.Embedding(
             vocab.word_size, self.word_dims, padding_idx=0)
 
         # pretrained_embs
-        extword_embed = vocab.load_pretrained_embs(word2vec_path)
+        # extword_embed = vocab.load_pretrained_embs(word2vec_path)
+        extword_embed = emb_vocab.embeddings
         extword_size, word_dims = extword_embed.shape
         logging.info("Load extword embed: words %d, dims %d." %
                      (extword_size, word_dims))
@@ -76,7 +79,7 @@ class WordCNNEncoder(nn.Module):
         input_size = self.word_dims
 
         self.filter_sizes = [2, 3, 4]  # n-gram window
-        self.out_channel = 100
+        self.out_channel = emb_vocab.word_dim
         # 3 个卷积层，卷积核大小分别为 [2,100], [3,100], [4,100]
         self.convs = nn.ModuleList([nn.Conv2d(1, self.out_channel, (filter_size, input_size), bias=True)
                                     for filter_size in self.filter_sizes])
@@ -91,7 +94,7 @@ class WordCNNEncoder(nn.Module):
         # 根据 index 取出词向量
         word_embed = self.word_embed(word_ids)
         extword_embed = self.extword_embed(extword_ids)
-        batch_embed = word_embed + extword_embed  # 串联
+        batch_embed = word_embed + extword_embed
 
         if self.training:
             batch_embed = self.dropout(batch_embed)
@@ -167,13 +170,13 @@ class SentEncoder(nn.Module):
 
 # build model
 class Model(nn.Module):
-    def __init__(self, vocab):
+    def __init__(self, vocab, emb_vocab, label_encoder):
         super(Model, self).__init__()
-        self.sent_rep_size = 300
+        self.sent_rep_size = emb_vocab.word_dim * 3
         self.doc_rep_size = sent_hidden_size * 2
         self.all_parameters = {}
         parameters = []
-        self.word_encoder = WordCNNEncoder(vocab)
+        self.word_encoder = WordCNNEncoder(vocab, emb_vocab)
         parameters.extend(list(filter(lambda p: p.requires_grad, self.word_encoder.parameters())))
 
         self.sent_encoder = SentEncoder(self.sent_rep_size)
@@ -181,7 +184,7 @@ class Model(nn.Module):
         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_encoder.parameters())))
         parameters.extend(list(filter(lambda p: p.requires_grad, self.sent_attention.parameters())))
 
-        self.out = nn.Linear(self.doc_rep_size, vocab.label_size, bias=True)
+        self.out = nn.Linear(self.doc_rep_size, label_encoder.label_size, bias=True)
         parameters.extend(list(filter(lambda p: p.requires_grad, self.out.parameters())))
 
         if use_cuda:

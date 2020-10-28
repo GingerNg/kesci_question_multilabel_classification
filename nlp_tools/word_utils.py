@@ -1,39 +1,44 @@
-import jieba  # 导入分词库
+import jieba
 import os
 import sys
 cur_path = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
 print(cur_path)
 sys.path.append(cur_path)
 from utils.file_utils import readFile
-# from . import config
+import re
+
+
+def remain(string):
+    # string = "123我123456abcdefgABCVDFF？/ ，。,.:;:''';'''[]{}()（）《》"
+    # print(string)
+    sub_str = re.sub(
+        u"([^\u4e00-\u9fa5\u0030-\u0039\u0041-\u005a\u0061-\u007a|。])", "", string)
+    # print(sub_str)
+    return sub_str
+
+
+def remove_stopword(word):
+    word = remain(word)
+    if word in stopWordList:
+        return False
+    else:
+        return True
 
 
 def segment(mytext):
     """中文分词"""
-    if isinstance(mytext, str) and len(mytext)>0:
-        return " ".join(jieba.cut(mytext))
+    if isinstance(mytext, str) and len(mytext) > 0:
+        return " ".join(filter(remove_stopword, jieba.cut(mytext)))
     else:
         return ""
-    # return jieba.cut(mytext)
 
 
-chinese_word_cut = segment
-
-
-def f(*args):
-    print(args)
-    return args
-
-
-def getStopWord(inputFile):
+def get_stop_word(inputFile):
     stopWordList = readFile(inputFile).splitlines()
     return stopWordList
 
-# stopWordList = getStopWord(config.stopword_path)  # 获取停用词
+
+stopWordList = get_stop_word(
+    "/home/wujinjie/kesci_question_multilabel_classification/data/stopwords.txt")  # 获取停用词
 
 
-if __name__ == "__main__":
-    # res = f(1,2,3,4)
-    # for r in list(res):
-    #     print(r)
-    print(segment("病情描述：病人是典型的“三高”，想吃拜阿司匹林做为预防用药，但是出现过敏症状。曾经治疗情况和"))

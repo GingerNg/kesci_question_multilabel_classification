@@ -10,6 +10,36 @@ import pickle
 from utils import file_utils
 from utils.model_utils import use_cuda, device
 import torch
+from nlp_tools.doc_utils import sentence_split
+from collections import Counter
+
+
+class LabelEncoer():  # 标签编码
+    def __init__(self):
+        self.unk = 1
+        self._id2label = []
+        self.target_names = []
+        # process label
+        label2name = {0: '科技', 1: '股票', 2: '体育', 3: '娱乐', 4: '时政',
+                      5: '社会', 6: '教育', 7: '财经', 8: '家居', 9: '游戏',
+                      10: '房产', 11: '时尚', 12: '彩票', 13: '星座'}
+
+        for label, name in label2name.items():
+            self._id2label.append(label)
+            self.target_names.append(name)
+        # self.label_counter = Counter(data['label'])
+        # for label in range(len(self.label_counter)):
+            # count = self.label_counter[label]
+            # self._id2label.append(label)
+            # self.target_names.append(label2name[label])
+
+    def label2id(self, xs):
+        if isinstance(xs, list):
+            return [self._label2id.get(x, self.unk) for x in xs]
+        return self._label2id.get(xs, self.unk)
+
+
+label_encoder = LabelEncoer()
 
 
 # 语料相关配置
@@ -55,7 +85,7 @@ def all_data2fold(fold_num, num=10000):
     texts = f['text'].tolist()[:num]
     labels = f['label'].tolist()[:num]
 
-    total = len(labels)
+    total = len(labels)   # 数据总量
 
     indexs = list(range(total))  # 　下标-索引
     np.random.shuffle(indexs)
@@ -169,42 +199,8 @@ def data_iter(data, batch_size, shuffle=True, noise=1.0):
         yield batch
 
 
-# build dataset
-def sentence_split(text, vocab, max_sent_len=256, max_segment=16):
-    """[summary]
 
-    Args:
-        text ([type]): [description]
-        vocab ([type]): [description]
-        max_sent_len (int, optional): [description]. Defaults to 256.
-        max_segment (int, optional): [description]. Defaults to 16.
-
-    Returns:
-        [type]: [[句子长度， 词list]]
-    """
-    words = text.strip().split()
-    document_len = len(words)
-
-    index = list(range(0, document_len, max_sent_len))
-    index.append(document_len)
-
-    segments = []
-    for i in range(len(index) - 1):
-        segment = words[index[i]: index[i + 1]]
-        assert len(segment) > 0
-        segment = [word if word in vocab._id2word else '<UNK>' for word in segment]
-        segments.append([len(segment), segment])
-
-    assert len(segments) > 0
-    # 截断
-    if len(segments) > max_segment:
-        segment_ = int(max_segment / 2)
-        return segments[:segment_] + segments[-segment_:]  # 前后各截1/2
-    else:
-        return segments
-
-
-def get_examples(data, vocab, max_sent_len=256, max_segment=8):
+def get_examples(data, vocab, emb_vocab, label_encoder, max_sent_len=256, max_segment=8):
     """[summary]
         dict --> list
         word--> id
@@ -218,7 +214,7 @@ def get_examples(data, vocab, max_sent_len=256, max_segment=8):
         [list]: [label_id, ]
     """
 
-    label2id = vocab.label2id
+    label2id = label_encoder.label2id
     examples = []
 
     for text, label in zip(data['text'], data['label']):
@@ -230,7 +226,7 @@ def get_examples(data, vocab, max_sent_len=256, max_segment=8):
         doc = []
         for sent_len, sent_words in sents_words:
             word_ids = vocab.word2id(sent_words)
-            extword_ids = vocab.extword2id(sent_words)
+            extword_ids = emb_vocab.extword2id(sent_words)
             doc.append([sent_len, word_ids, extword_ids])  # sent_len 句子长度：即句子中词个数
         examples.append([id, len(doc), doc])   # len(doc): 文档中句子的个数
 
@@ -253,8 +249,11 @@ def batch2tensor(batch_data):
         max_sent_len = max(sent_lens)  #　最大句子长度
         doc_max_sent_len.append(max_sent_len)
 
-    max_doc_len = max(doc_lens)  # 最大文档长度（句子个数）
-    max_sent_len = max(doc_max_sent_len)
+    # max_doc_len = max(doc_lens)  # 最大文档长度（句子个数）
+    # max_sent_len = max(doc_max_sent_len)
+    # print(max_doc_len, max_sent_len)
+    max_sent_len = 256
+    max_doc_len = 8
 
     # 初始化矩阵: batch_inputs1 batch_inputs2 双输入
     batch_inputs1 = torch.zeros((batch_size, max_doc_len, max_sent_len), dtype=torch.int64)
