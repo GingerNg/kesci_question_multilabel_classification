@@ -17,8 +17,8 @@ train_df = process_corpus_fasttext(data_df)
 # test_df = data_pd[train_len:]
 train_path = "./data/fasttext/tianchi_train_df_ft.csv"
 # test_path = "./data/fasttext/kesci_test_df_ft.csv"
-file_utils.writeData(train_df["sentence"].to_list(), train_path)
-# file_utils.writeData(test_df["sentence"].to_list(), test_path)
+file_utils.write_data(train_df["sentence"].to_list(), train_path)
+# file_utils.write_data(test_df["sentence"].to_list(), test_path)
 
 # train_df.to_csv(train_path)
 # test_df.to_csv(test_path)

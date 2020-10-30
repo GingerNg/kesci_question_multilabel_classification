@@ -8,7 +8,8 @@ import os
 import argparse
 import pandas as pd
 import time
-from corpus_preprocess.tianchi_news_process import fold_data_path, batch2tensor, current_path, get_examples_bert, process_corpus_dl, label_encoder
+from corpus_preprocess.tianchi_news_process import fold_data_path, batch2tensor, get_examples_bert, label_encoder
+from corpus_preprocess.industry_corpus_process import process_corpus_dl
 from models.text_bert import Model
 from models.optimzers import Optimizer
 from nlp_tools.vocab_builder import Vocab
@@ -22,11 +23,8 @@ def run(method="train", save_path=None, infer_texts=[]):
     shuffle_slicer = ShuffleSlicer()
     # start_time = time.time()
 
-    # raw_data_path = "/home/wujinjie/kesci_question_multilabel_classification/data/raw_data/baidu/nlp_db.baidu_text.csv"
-    raw_data_path = "/home/wujinjie/kesci_question_multilabel_classification/data/raw_data/tianchi_news/train_set.csv"
-    texts = pd.read_csv(raw_data_path, sep='\t', encoding='UTF-8')
-    # texts = data_utils.df2list(pd.read_csv(raw_data_path))
-    # texts = pd.read_csv(raw_data_path)
+    raw_data_path = "/home/wujinjie/kesci_question_multilabel_classification/data/raw_data/baidu/nlp_db.baidu_text.csv"
+    texts = pd.read_csv(raw_data_path)
     train_df, dev_df, test_df = shuffle_slicer.split(texts, dev=True)
 
     # Test_data = {'label': [0] * len(texts), 'text': test_texts}

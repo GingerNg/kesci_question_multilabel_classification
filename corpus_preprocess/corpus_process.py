@@ -134,9 +134,9 @@ class FasttextCorpusProcessor(object):
         print(train_len)
         print(all-train_len)
         if "train_path" in sample_info:
-            writeData(sentences[0:train_len], sample_info["train_path"])
+            write_data(sentences[0:train_len], sample_info["train_path"])
         if "test_path" in sample_info:
-            writeData(sentences[train_len:all], sample_info["test_path"])
+            write_data(sentences[train_len:all], sample_info["test_path"])
         train = sentences[0:all]
         test = sentences[0:all]
 

@@ -24,7 +24,7 @@ def sentence_split(text, vocab, max_sent_len=256, max_segment=16, sent_sep=None)
         for i in range(len(index) - 1):
             segment = words[index[i]: index[i + 1]]
             assert len(segment) > 0
-            segment = [word if word in vocab._id2word else '<UNK>' for word in segment]
+            segment = [word if word in vocab._id2word else '<UNK>' for word in segment]  # 判断是否UNK
             segments.append([len(segment), segment])
     else:
         segments = []

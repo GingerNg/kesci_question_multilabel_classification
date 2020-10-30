@@ -5,6 +5,29 @@ from collections import Counter
 import numpy as np
 
 
+class BaikeVocab():
+    def __init__(self, vocab_path):
+        super().__init__()
+        self.unk = -1
+        self._id2word = []
+        self.build_vocab(vocab_path)
+        def reverse(x): return dict(zip(x, range(len(x))))  # 词与id的映射
+        self._word2id = reverse(self._id2word)  # dict， word: id
+
+    def build_vocab(self, vocab_path):
+        lines = open(vocab_path, "r").readlines()
+        words = []
+        for line in lines:
+            words.append(line.strip())
+        # print(words)
+        self._id2word = words
+
+    def word2id(self, xs):
+        if isinstance(xs, list):
+            return [self._word2id.get(x, self.unk) for x in xs]
+        return self._word2id.get(xs, self.unk)
+
+
 # basic_tokenizer = BasicTokenizer()
 class EmbVocab():  # 词向量词典
     def __init__(self, embfile):
@@ -15,7 +38,6 @@ class EmbVocab():  # 词向量词典
         self.word_dim = 0
         self.word_count = 0
         self.embeddings = self.load_pretrained_embs(embfile=embfile)
-
 
     def load_pretrained_embs(self, embfile):
         """[summary]
@@ -88,7 +110,7 @@ class Vocab():
 
     def build_vocab(self, data):
         """
-        根据数据生成词表
+        根据文本数据生成词表
         """
         self.word_counter = Counter()
 

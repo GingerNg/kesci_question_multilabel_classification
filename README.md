@@ -47,8 +47,10 @@ epoch(所有数据) -> batch/slice（随机选择固定size的数据）
 [Datawhale零基础入门NLP赛事 - Task6 基于深度学习的文本分类3-BERT](https://tianchi.aliyun.com/notebook-ai/detail?spm=5176.12586969.1002.75.6406224ek2VNsN&postId=118260)
 
 
-转换bert的tensorflow模型为pytorch的模型
-https://github.com/huggingface/transformers/tree/master/src/transformers
+
+
+
+id--label--name
 
 
 # 模型放置在gpu上进行计算

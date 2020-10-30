@@ -33,7 +33,7 @@ class WhitespaceTokenizer():
     def tokenize(self, tokens):
         assert len(tokens) <= self.max_len - 2  # raise AssertionError
         tokens = ["[CLS]"] + tokens + ["[SEP]"]
-        output_tokens = self.token2id(tokens)
+        output_tokens = self.token2id(tokens)   # 转换为bert词表中的id
         return output_tokens
 
     def token2id(self, xs):

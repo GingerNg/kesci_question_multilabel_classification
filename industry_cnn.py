@@ -17,13 +17,14 @@ from corpus_preprocess.tianchi_news_process import data_iter
 from evaluation_index.scores import get_score, reformat
 import numpy as np
 from sklearn.metrics import classification_report
+from cfg import proj_path
 
 
 def run(method="train", save_path=None, infer_texts=[]):
     shuffle_slicer = ShuffleSlicer()
     # start_time = time.time()
 
-    raw_data_path = "/home/wujinjie/kesci_question_multilabel_classification/data/raw_data/baidu/nlp_db.baidu_text.csv"
+    raw_data_path = os.path.join(proj_path, "data/raw_data/baidu/nlp_db.baidu_text.csv")
     # texts = data_utils.df2list(pd.read_csv(raw_data_path))
     texts = pd.read_csv(raw_data_path)
     train_df, dev_df, test_df = shuffle_slicer.split(texts, dev=True)
@@ -35,8 +36,7 @@ def run(method="train", save_path=None, infer_texts=[]):
     # log_interval = 50
     test_batch_size = 128
     train_batch_size = 128
-    # save_model = '/home/wujinjie/kesci_question_multilabel_classification/industry_cnn.bin'
-    # save_test = '.indusrtry_cnn.csv'
+
     train_texts, train_labels = process_corpus_dl(train_df)
     Train_data = {'label': train_labels, 'text': train_texts}
 
@@ -45,7 +45,7 @@ def run(method="train", save_path=None, infer_texts=[]):
     vocab = Vocab(Train_data)
     step = 0
 
-    word2vec_path = '/home/wujinjie/kesci_question_multilabel_classification/data/emb/industry_vec.txt'
+    word2vec_path = os.path.join(proj_path, 'data/emb/industry_vec.txt')
     emb_vocab = EmbVocab(embfile=word2vec_path)
 
     def _eval(data):
@@ -146,7 +146,7 @@ def run(method="train", save_path=None, infer_texts=[]):
                 early_stop = 0
                 best_train_f1 = train_f1
                 save_path = model_utils.save_checkpoint(
-                    model, epoch, save_folder="/home/wujinjie/kesci_question_multilabel_classification/data/textcnn")
+                    model, epoch, save_folder=os.path.join(proj_path, "data/textcnn_industry"))
                 print("save_path:{}".format(save_path))
                 # torch.save(model.state_dict(), save_model)
             else:
@@ -159,7 +159,7 @@ def run(method="train", save_path=None, infer_texts=[]):
     else:
         model = model_utils.load_checkpoint(save_path)
         if method == "test":
-            test_texts, test_labels = process_corpus_dl(train_df)
+            test_texts, test_labels = process_corpus_dl(test_df)
             Test_data = {'label': test_labels, 'text': test_texts}
             test_data = get_examples(Test_data, vocab, emb_vocab, label_encoder)
             # model.load_state_dict(torch.load(save_model))
@@ -175,7 +175,7 @@ def run(method="train", save_path=None, infer_texts=[]):
 
 
 if __name__ == "__main__":
-    run(method="infer",
+    run(method="train",
         save_path="/home/wujinjie/kesci_question_multilabel_classification/data/textcnn/epoch_35.pth",
         infer_texts=["医学，是通过科学或技术的手段处理生命的各种疾病或病变的一种学科，促进病患恢复健康的一种专业。它是生物学的应用学科，分基础医学、临床医学。从生理解剖、分子遗传、生化物理等层面来处理人体疾病的高级科学。它是一个从预防到治疗疾病的系统学科，研究领域大方向包括法医学，动物医学，中医学，口腔医学，临床医学等。",
                     "西湖，位于浙江省杭州市西湖区龙井路1号，杭州市区西部，景区总面积49平方千米，汇水面积为21.22平方千米，湖面面积为6.38平方千米。",

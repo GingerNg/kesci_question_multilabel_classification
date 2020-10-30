@@ -31,8 +31,8 @@ train_df = data_pd[0:train_len]
 test_df = data_pd[train_len:]
 train_path = "./data/fasttext/industry_train_df_ft.txt"
 test_path = "./data/fasttext/industry_test_df_ft.txt"
-file_utils.writeData(train_df["sentence"].to_list(), train_path)
-file_utils.writeData(test_df["sentence"].to_list(), test_path)
+file_utils.write_data(train_df["sentence"].to_list(), train_path)
+file_utils.write_data(test_df["sentence"].to_list(), test_path)
 # train_df.to_csv(train_path)
 # test_df.to_csv(test_path)
 

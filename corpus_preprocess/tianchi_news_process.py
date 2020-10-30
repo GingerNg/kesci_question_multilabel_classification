@@ -1,8 +1,3 @@
-import os, sys
-current_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-print(current_path)
-sys.path.append(current_path)
-os.chdir("..")
 import pandas as pd
 import logging
 import numpy as np
@@ -12,6 +7,7 @@ from utils.model_utils import use_cuda, device
 import torch
 from nlp_tools.doc_utils import sentence_split
 from collections import Counter
+from cfg import fold_data_path
 
 
 class LabelEncoer():  # 标签编码
@@ -27,23 +23,21 @@ class LabelEncoer():  # 标签编码
         for label, name in label2name.items():
             self._id2label.append(label)
             self.target_names.append(name)
-        # self.label_counter = Counter(data['label'])
-        # for label in range(len(self.label_counter)):
-            # count = self.label_counter[label]
-            # self._id2label.append(label)
-            # self.target_names.append(label2name[label])
+
+        def reverse(x): return dict(zip(x, range(len(x))))  # 词与id的映射
+        self._label2id = reverse(self._id2label)
 
     def label2id(self, xs):
         if isinstance(xs, list):
             return [self._label2id.get(x, self.unk) for x in xs]
         return self._label2id.get(xs, self.unk)
 
+    @property
+    def label_size(self):
+        return len(self._id2label)
+
 
 label_encoder = LabelEncoer()
-
-
-# 语料相关配置
-fold_data_path = os.path.join(current_path, "data/textcnn/data/fold_data.pl")
 
 
 def process_corpus_fasttext(data_df):
@@ -157,18 +151,20 @@ def all_data2fold(fold_num, num=10000):
         data = {'label': shuffle_fold_labels, 'text': shuffle_fold_texts}
         fold_data.append(data)
 
-    logging.info("Fold lens %s", str([len(data['label']) for data in fold_data]))
-    file_utils.writeBunch(path=fold_data_path, bunchFile=fold_data)
+    logging.info("Fold lens %s", str(
+        [len(data['label']) for data in fold_data]))
+    file_utils.write_bunch(path=fold_data_path, bunchFile=fold_data)
     return fold_data
 
 
 def batch_slice(data, batch_size):
     batch_num = int(np.ceil(len(data) / float(batch_size)))  # ceil 向上取整
     for i in range(batch_num):
-        cur_batch_size = batch_size if i < batch_num - 1 else len(data) - batch_size * i
-        docs = [data[i * batch_size + b] for b in range(cur_batch_size)]  ## ???
+        cur_batch_size = batch_size if i < batch_num - \
+            1 else len(data) - batch_size * i
+        docs = [data[i * batch_size + b] for b in range(cur_batch_size)]  # ???
 
-        yield docs   #　返回一个batch的数据
+        yield docs  # 　返回一个batch的数据
 
 
 def data_iter(data, batch_size, shuffle=True, noise=1.0):
@@ -184,20 +180,20 @@ def data_iter(data, batch_size, shuffle=True, noise=1.0):
         np.random.shuffle(data)
 
         lengths = [example[1] for example in data]
-        noisy_lengths = [- (l + np.random.uniform(- noise, noise)) for l in lengths]
+        noisy_lengths = [- (l + np.random.uniform(- noise, noise))
+                         for l in lengths]
         sorted_indices = np.argsort(noisy_lengths).tolist()
         sorted_data = [data[i] for i in sorted_indices]
     else:
         sorted_data = data
 
-    batched_data.extend(list(batch_slice(sorted_data, batch_size))) # [[],[]]
+    batched_data.extend(list(batch_slice(sorted_data, batch_size)))  # [[],[]]
 
     if shuffle:
         np.random.shuffle(batched_data)
 
     for batch in batched_data:
         yield batch
-
 
 
 def get_examples(data, vocab, emb_vocab, label_encoder, max_sent_len=256, max_segment=8):
@@ -227,8 +223,44 @@ def get_examples(data, vocab, emb_vocab, label_encoder, max_sent_len=256, max_se
         for sent_len, sent_words in sents_words:
             word_ids = vocab.word2id(sent_words)
             extword_ids = emb_vocab.extword2id(sent_words)
-            doc.append([sent_len, word_ids, extword_ids])  # sent_len 句子长度：即句子中词个数
+            # sent_len 句子长度：即句子中词个数
+            doc.append([sent_len, word_ids, extword_ids])
         examples.append([id, len(doc), doc])   # len(doc): 文档中句子的个数
+
+    logging.info('Total %d docs.' % len(examples))
+    return examples
+
+
+def get_examples_bert(data, word_encoder, vocab, label_encoder, max_sent_len=256, max_segment=8):
+    """[summary]
+        dict --> list
+        word--> id
+    Args:
+        data ([type]): [    label:[], text:[[],...,[]]   ]
+        vocab ([type]): [description]
+        max_sent_len (int, optional): [description]. Defaults to 256.
+        max_segment (int, optional): [description]. Defaults to 8.
+
+    Returns:
+        [list]: [label_id, ]
+    """
+
+    label2id = label_encoder.label2id
+    examples = []
+
+    for text, label in zip(data['text'], data['label']):
+        # label
+        id = label2id(label)
+
+        # words
+        sents_words = sentence_split(text, vocab, max_sent_len-2, max_segment)
+        doc = []
+        for sent_len, sent_words in sents_words:  # 逐句处理
+            token_ids = word_encoder.encode(sent_words)
+            sent_len = len(token_ids)
+            token_type_ids = [0] * sent_len
+            doc.append([sent_len, token_ids, token_type_ids])
+        examples.append([id, len(doc), doc])
 
     logging.info('Total %d docs.' % len(examples))
     return examples
@@ -246,7 +278,7 @@ def batch2tensor(batch_data):
         doc_labels.append(doc_data[0])
         doc_lens.append(doc_data[1])
         sent_lens = [sent_data[0] for sent_data in doc_data[2]]
-        max_sent_len = max(sent_lens)  #　最大句子长度
+        max_sent_len = max(sent_lens)  # 　最大句子长度
         doc_max_sent_len.append(max_sent_len)
 
     # max_doc_len = max(doc_lens)  # 最大文档长度（句子个数）
@@ -256,15 +288,18 @@ def batch2tensor(batch_data):
     max_doc_len = 8
 
     # 初始化矩阵: batch_inputs1 batch_inputs2 双输入
-    batch_inputs1 = torch.zeros((batch_size, max_doc_len, max_sent_len), dtype=torch.int64)
-    batch_inputs2 = torch.zeros((batch_size, max_doc_len, max_sent_len), dtype=torch.int64)
-    batch_masks = torch.zeros((batch_size, max_doc_len, max_sent_len), dtype=torch.float32)
+    batch_inputs1 = torch.zeros(
+        (batch_size, max_doc_len, max_sent_len), dtype=torch.int64)
+    batch_inputs2 = torch.zeros(
+        (batch_size, max_doc_len, max_sent_len), dtype=torch.int64)
+    batch_masks = torch.zeros(
+        (batch_size, max_doc_len, max_sent_len), dtype=torch.float32)
     batch_labels = torch.LongTensor(doc_labels)
 
     for b in range(batch_size):
         for sent_idx in range(doc_lens[b]):
             sent_data = batch_data[b][2][sent_idx]
-            for word_idx in range(sent_data[0]):   #　sent_data[0]: 句子长度
+            for word_idx in range(sent_data[0]):  # 　sent_data[0]: 句子长度
                 batch_inputs1[b, sent_idx, word_idx] = sent_data[1][word_idx]
                 batch_inputs2[b, sent_idx, word_idx] = sent_data[2][word_idx]
                 batch_masks[b, sent_idx, word_idx] = 1
@@ -278,5 +313,22 @@ def batch2tensor(batch_data):
     return (batch_inputs1, batch_inputs2, batch_masks), batch_labels
 
 
-if __name__ == "__main__":
-    fold_data = all_data2fold(10)
+def process_corpus_dl(data_df):
+    texts = []
+    labels = []
+
+    def _process(line):
+        words = line["text"]
+        if len(words) > 1:
+            # labels.append(label_encoder.name2label(keyword))
+            labels.append(line["label"])
+            texts.append(words)
+    if isinstance(data_df, list):
+        for line in data_df:
+            _process(line)
+    else:
+        for _, row in data_df.iterrows():
+            # print(type(row))
+            _process(row.to_dict())
+
+    return texts, labels

@@ -4,48 +4,13 @@ import logging
 import torch.nn.functional as F
 import numpy as np
 import os
+from models.attentions import Attention
+from models.encoders import SentEncoder
 from utils.model_utils import use_cuda, device
 current_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-word2vec_path = os.path.join(current_path, 'data/emb/industry_vec.txt')
+# word2vec_path = os.path.join(current_path, 'data/emb/industry_vec.txt')
 dropout = 0.15
-
-
-class Attention(nn.Module):
-    def __init__(self, hidden_size):
-        super(Attention, self).__init__()
-        self.weight = nn.Parameter(torch.Tensor(hidden_size, hidden_size))
-        self.weight.data.normal_(mean=0.0, std=0.05)
-
-        self.bias = nn.Parameter(torch.Tensor(hidden_size))
-        b = np.zeros(hidden_size, dtype=np.float32)
-        self.bias.data.copy_(torch.from_numpy(b))
-
-        self.query = nn.Parameter(torch.Tensor(hidden_size))
-        self.query.data.normal_(mean=0.0, std=0.05)
-
-    def forward(self, batch_hidden, batch_masks):
-        # batch_hidden: b x len x hidden_size (2 * hidden_size of lstm)
-        # batch_masks:  b x len
-
-        # linear
-        key = torch.matmul(batch_hidden, self.weight) + self.bias  # b x len x hidden
-
-        # compute attention  (len, hidden) *  hidden ---> (len)
-        outputs = torch.matmul(key, self.query)  # b x len
-
-        masked_outputs = outputs.masked_fill((1 - batch_masks).bool(), float(-1e32))
-
-        attn_scores = F.softmax(masked_outputs, dim=1)  # b x len
-
-        # 对于全零向量，-1e32的结果为 1/len, -inf为nan, 额外补0
-        masked_attn_scores = attn_scores.masked_fill((1 - batch_masks).bool(), 0.0)
-
-        # sum weighted sources
-        batch_outputs = torch.bmm(masked_attn_scores.unsqueeze(1), key).squeeze(1)  # b x hidden
-
-        return batch_outputs, attn_scores
-
 
 class WordCNNEncoder(nn.Module):
     """[word cnn 编码， seq_len,word_dim ==> seq_len-filter_size+1 , out_channel == > out_channel,1]
@@ -133,40 +98,9 @@ class WordCNNEncoder(nn.Module):
         return reps
 
 
-# build sent encoder
 sent_hidden_size = 256
 sent_num_layers = 2
 
-
-class SentEncoder(nn.Module):
-    """[句子编码]
-
-    Args:
-        nn ([type]): [description]
-    """
-    def __init__(self, sent_rep_size):
-        super(SentEncoder, self).__init__()
-        self.dropout = nn.Dropout(dropout)
-
-        self.sent_lstm = nn.LSTM(
-            input_size=sent_rep_size,
-            hidden_size=sent_hidden_size,
-            num_layers=sent_num_layers,
-            batch_first=True,
-            bidirectional=True
-        )
-
-    def forward(self, sent_reps, sent_masks):
-        # sent_reps:  b x doc_len x sent_rep_size
-        # sent_masks: b x doc_len
-
-        sent_hiddens, _ = self.sent_lstm(sent_reps)  # b x doc_len x hidden*2
-        sent_hiddens = sent_hiddens * sent_masks.unsqueeze(2)
-
-        if self.training:
-            sent_hiddens = self.dropout(sent_hiddens)
-
-        return sent_hiddens
 
 # build model
 class Model(nn.Module):

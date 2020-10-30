@@ -7,3 +7,4 @@
 *.bin
 *.pl
 data/emb/bert-mini/vocab.txt
+*.pth

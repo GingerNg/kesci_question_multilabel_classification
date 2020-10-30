@@ -1,11 +1,9 @@
 import jieba
-import os
-import sys
-cur_path = os.path.dirname(os.path.abspath(os.path.dirname(__file__)))
-print(cur_path)
-sys.path.append(cur_path)
-from utils.file_utils import readFile
+from cfg import stop_word_path
+from utils import file_utils
 import re
+
+stopWordList = None
 
 
 def remain(string):
@@ -18,7 +16,10 @@ def remain(string):
 
 
 def remove_stopword(word):
+    global stopWordList
     word = remain(word)
+    if stopWordList is None:
+        stopWordList = get_stop_word(stop_word_path)
     if word in stopWordList:
         return False
     else:
@@ -34,11 +35,5 @@ def segment(mytext):
 
 
 def get_stop_word(inputFile):
-    stopWordList = readFile(inputFile).splitlines()
+    stopWordList = file_utils.read_file(inputFile).splitlines()
     return stopWordList
-
-
-stopWordList = get_stop_word(
-    "/home/wujinjie/kesci_question_multilabel_classification/data/stopwords.txt")  # 获取停用词
-
-

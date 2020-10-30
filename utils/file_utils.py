@@ -1,12 +1,13 @@
 import pickle
 
-def readFile(path):
-    with open(path, 'r', errors='ignore', encoding="gbk") as file:  # 文档中编码有些问题，所有用errors过滤错误
+
+def read_file(path, encoding="utf-8"):
+    with open(path, 'r', errors='ignore', encoding=encoding) as file:  # 文档中编码有些问题，所有用errors过滤错误
         content = file.read()
         return content
 
 
-def writeData(sentences, fileName):
+def write_data(sentences, fileName):
     """
     函数说明：把处理好的写入到文件中，备用
     参数说明：
@@ -17,7 +18,7 @@ def writeData(sentences, fileName):
     print("done!")
 
 
-def readBunch(path):
+def read_bunch(path):
     with open(path, 'rb') as file:
         bunch = pickle.load(file)
         # pickle.load(file)
@@ -25,7 +26,7 @@ def readBunch(path):
     return bunch
 
 
-def writeBunch(path, bunchFile):
+def write_bunch(path, bunchFile):
     """[bunch: 大量; 大批;]
 
     Args:
