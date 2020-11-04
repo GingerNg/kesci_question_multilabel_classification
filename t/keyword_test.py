@@ -9,5 +9,7 @@ if __name__ == "__main__":
     raw_path = os.path.join(current_path, "data/raw_data/ppt/corpus.txt")
     lines = open(raw_path, "r").readlines()
     for line in lines:
-        keywords = get_keywords(line)
+        keywords = get_keywords(line, mtd="textrank")
+        # print(keywords)
+        keywords = [word[0] for word in keywords]
         print(keywords)

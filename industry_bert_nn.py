@@ -8,19 +8,22 @@ import os
 import argparse
 import pandas as pd
 import time
-from corpus_preprocess.tianchi_news_process import fold_data_path, batch2tensor, get_examples
-from corpus_preprocess.industry_corpus_process import process_corpus_dl, label_encoder, segment
-from models.text_cnn import Model
+from corpus_preprocess.tianchi_news_process import fold_data_path
+from corpus_preprocess.industry_corpus_process import process_corpus_dl, label_encoder, get_example_bert_nn, batch2tensor, data_iter_bert_nn
+from models.text_cnn import Model, NNModel
 from models.optimzers import Optimizer
 from nlp_tools.vocab_builder import Vocab, EmbVocab
-from corpus_preprocess.tianchi_news_process import data_iter
 from evaluation_index.scores import get_score, reformat
 import numpy as np
 from sklearn.metrics import classification_report
 from cfg import proj_path
+from utils import file_utils
 
+"""
+bert_serving + NN
+"""
 
-def run(method="train", save_path=None, infer_texts=[]):
+def run(mth="train", save_path=None, infer_texts=[]):
     shuffle_slicer = ShuffleSlicer()
     # start_time = time.time()
 
@@ -36,17 +39,8 @@ def run(method="train", save_path=None, infer_texts=[]):
     # log_interval = 50
     test_batch_size = 128
     train_batch_size = 128
-
-    train_texts, train_labels = process_corpus_dl(train_df)
-    Train_data = {'label': train_labels, 'text': train_texts}
-
-    dev_texts, dev_labels = process_corpus_dl(dev_df)
-    Dev_data = {'label': dev_labels, 'text': dev_texts}
-    vocab = Vocab(Train_data)
     step = 0
 
-    word2vec_path = os.path.join(proj_path, 'data/emb/industry_vec.txt')
-    emb_vocab = EmbVocab(embfile=word2vec_path)
 
     def _eval(data):
         model.eval()  # 不启用 BatchNormalization 和 Dropout
@@ -54,7 +48,7 @@ def run(method="train", save_path=None, infer_texts=[]):
         y_pred = []
         y_true = []
         with torch.no_grad():
-            for batch_data in data_iter(data, test_batch_size, shuffle=False):
+            for batch_data in data_iter_bert_nn(data, test_batch_size, shuffle=False):
                 torch.cuda.empty_cache()
                 batch_inputs, batch_labels = batch2tensor(batch_data)
                 batch_outputs = model(batch_inputs)
@@ -77,17 +71,39 @@ def run(method="train", save_path=None, infer_texts=[]):
                 y_pred.extend(torch.max(batch_outputs, dim=1)
                               [1].cpu().numpy().tolist())
                 print(label_encoder.label2name(y_pred))
-    if method == "preprocess":
-        pass
-    if method == "train":
+    if mth == "preprocess":
+        train_texts, train_labels = process_corpus_dl(train_df, seg=False)
+        Train_data = {'label': train_labels, 'text': train_texts}
 
-        # 生成模型可处理的格式
-        train_data = get_examples(Train_data, vocab, emb_vocab, label_encoder)
-        dev_data = get_examples(Dev_data, vocab, emb_vocab, label_encoder)
+        dev_texts, dev_labels = process_corpus_dl(dev_df, seg=False)
+        Dev_data = {'label': dev_labels, 'text': dev_texts}
+        # # 生成模型可处理的格式
+        train_data = get_example_bert_nn(Train_data, label_encoder)
+        dev_data = get_example_bert_nn(Dev_data, label_encoder)
+
+        test_texts, test_labels = process_corpus_dl(test_df)
+        Test_data = {'label': test_labels, 'text': test_texts}
+        test_data = get_example_bert_nn(Test_data, label_encoder)
+
+        processed_data = {
+            "train": train_data,
+            "dev": dev_data,
+            "test": test_data
+        }
+        file_utils.write_bunch(os.path.join(proj_path, "data/bert_nn/industry/indusrty.pkl"), processed_data)
+
+    elif mth == "train":
+        processed_data = file_utils.read_bunch(os.path.join(proj_path, "data/bert_nn/industry/indusrty.pkl"))
+        train_data = processed_data["train"]
+        dev_data = processed_data["dev"]
+        test_data = processed_data["test"]
+
         # 一个epoch的batch个数
         batch_num = int(np.ceil(len(train_data) / float(train_batch_size)))
 
-        model = Model(vocab, emb_vocab, label_encoder)
+        print("train_num:{}, test_num:{}, dev_num:{}, batch_num:{}".format(len(train_data), len(test_data), len(dev_data), batch_num))
+
+        model = NNModel(label_encoder)
         optimizer = Optimizer(model.all_parameters, None)  # 优化器
 
         #　loss
@@ -105,7 +121,7 @@ def run(method="train", save_path=None, infer_texts=[]):
             # batch_idx = 1
             y_pred = []
             y_true = []
-            for batch_data in data_iter(train_data, train_batch_size, shuffle=True):
+            for batch_data in data_iter_bert_nn(train_data, train_batch_size, shuffle=True):
                 torch.cuda.empty_cache()
                 batch_inputs, batch_labels = batch2tensor(batch_data)
                 batch_outputs = model(batch_inputs)
@@ -147,7 +163,7 @@ def run(method="train", save_path=None, infer_texts=[]):
                 early_stop = 0
                 best_train_f1 = train_f1
                 save_path = model_utils.save_checkpoint(
-                    model, epoch, save_folder=os.path.join(proj_path, "data/textcnn_industry"))
+                    model, epoch, save_folder=os.path.join(proj_path, "data/bert_nn/industry"))
                 print("save_path:{}".format(save_path))
                 # torch.save(model.state_dict(), save_model)
             else:
@@ -159,25 +175,23 @@ def run(method="train", save_path=None, infer_texts=[]):
                 dev_f1, score, best_train_f1, best_dev_f1))
     else:
         model = model_utils.load_checkpoint(save_path)
-        if method == "test":
-            test_texts, test_labels = process_corpus_dl(test_df)
-            Test_data = {'label': test_labels, 'text': test_texts}
-            test_data = get_examples(Test_data, vocab, emb_vocab, label_encoder)
+        if mth == "test":
+
             # model.load_state_dict(torch.load(save_model))
             _, dev_f1 = _eval(data=test_data)
             print(dev_f1)
 
-        elif method == "infer":
+        elif mth == "infer":
             infer_texts = list(map(segment, infer_texts))
             # print(infer_texts)
             Infer_data = {'label': [0] * len(infer_texts), 'text': infer_texts}
-            infer_data = get_examples(Infer_data, vocab, emb_vocab, label_encoder)
+            infer_data = get_example_bert_nn(Infer_data, label_encoder)
             _infer(data=infer_data)
 
 
 if __name__ == "__main__":
-    run(method="infer",
-        save_path="/home/wujinjie/kesci_question_multilabel_classification/data/textcnn/industry/epoch_35.pth",
+    run(mth="train",
+        save_path="/home/wujinjie/kesci_question_multilabel_classification/data/textcnn/epoch_35.pth",
         infer_texts=["医学，是通过科学或技术的手段处理生命的各种疾病或病变的一种学科，促进病患恢复健康的一种专业。它是生物学的应用学科，分基础医学、临床医学。从生理解剖、分子遗传、生化物理等层面来处理人体疾病的高级科学。它是一个从预防到治疗疾病的系统学科，研究领域大方向包括法医学，动物医学，中医学，口腔医学，临床医学等。",
                     "西湖，位于浙江省杭州市西湖区龙井路1号，杭州市区西部，景区总面积49平方千米，汇水面积为21.22平方千米，湖面面积为6.38平方千米。",
                     "教育又是一种思维的传授"])

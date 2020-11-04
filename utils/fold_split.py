@@ -44,6 +44,9 @@ class ShuffleSlicer(Slicer):
             train_df = df[0:fold_len*3]
             dev_df = df[fold_len*3:fold_len*4]
             test_df = df[fold_len*4:]
+            # train_df = df[0:100]
+            # dev_df = df[100:200]
+            # test_df = df[200:300]
             return train_df, dev_df, test_df
         else:
             train_len = df.shape[0]//5 * 4

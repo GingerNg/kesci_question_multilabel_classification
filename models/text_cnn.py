@@ -153,3 +153,28 @@ class Model(nn.Module):
         batch_outputs = self.out(doc_reps)  # b x num_labels
 
         return batch_outputs
+
+
+class NNModel(nn.Module):
+    def __init__(self, label_encoder):
+        super(NNModel, self).__init__()
+        # self.out = nn.Linear(self.doc_rep_size, label_encoder.label_size, bias=True)
+        self.all_parameters = {}
+        parameters = []
+        # self.fc1 = nn.Linear(768, 84)  # 全连接层
+        self.fc = nn.Linear(768, label_encoder.label_size)
+        self.classifier = nn.Sequential(
+            # self.fc1,
+            # self.fc3
+            self.fc
+        )
+        parameters.extend(list(filter(lambda p: p.requires_grad, self.classifier.parameters())))
+        if use_cuda:
+            self.to(device)
+        if len(parameters) > 0:
+            self.all_parameters["basic_parameters"] = parameters  # key(str): list
+
+    def forward(self, batch_inputs):
+        batch_outputs = self.classifier(batch_inputs)  # b x num_labels
+
+        return batch_outputs

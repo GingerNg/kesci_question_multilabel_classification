@@ -8,8 +8,7 @@ import os
 import argparse
 import pandas as pd
 import time
-from corpus_preprocess.tianchi_news_process import fold_data_path, batch2tensor, get_examples, process_corpus_dl
-from corpus_preprocess.industry_corpus_process import label_encoder, segment
+from corpus_preprocess.tianchi_news_process import fold_data_path, batch2tensor, get_examples, process_corpus_dl, label_encoder
 from models.text_cnn import Model
 from models.optimzers import Optimizer
 from nlp_tools.vocab_builder import Vocab, EmbVocab
@@ -75,7 +74,10 @@ def run(method="train", save_path=None, infer_texts=[]):
                 batch_outputs = model(batch_inputs)
                 y_pred.extend(torch.max(batch_outputs, dim=1)
                               [1].cpu().numpy().tolist())
-                print(label_encoder.label2name(y_pred))
+                # print(label_encoder.label2name(y_pred))
+        name = ['label']
+        pred_pd = pd.DataFrame(columns=name, data=y_pred)
+        pred_pd.to_csv("test_submit.csv")
 
     if method == "train":
 
@@ -166,18 +168,12 @@ def run(method="train", save_path=None, infer_texts=[]):
 
             test_data = get_examples(Test_data, vocab, emb_vocab, label_encoder)
             # model.load_state_dict(torch.load(save_model))
-            _, dev_f1 = _eval(data=test_data)
-            print(dev_f1)
-
-        elif method == "infer":
-            infer_texts = list(map(segment, infer_texts))
-            # print(infer_texts)
-            Infer_data = {'label': [0] * len(infer_texts), 'text': infer_texts}
-            infer_data = get_examples(Infer_data, vocab, emb_vocab, label_encoder)
-            _infer(data=infer_data)
+            # _, dev_f1 = _eval(data=test_data)
+            # print(dev_f1)
+            _infer(data=test_data)
 
 
 if __name__ == "__main__":
     run(method="test",
-        save_path=os.path.join(proj_path, "data/textcnn/epoch_17.pth"),
+        save_path=os.path.join(proj_path, "data/textcnn/tianchi_news/epoch_13.pth"),
         infer_texts=[])

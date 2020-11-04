@@ -19,6 +19,7 @@ baike_vec_path = os.path.join(proj_path, "data/w2v.h5")
 
 stop_word_path = os.path.join(proj_path, "data/stopwords.txt")
 
+
 class STEPTYPE(Enum):
     train = "01"
     test = "02"

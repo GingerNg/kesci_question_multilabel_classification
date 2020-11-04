@@ -2,8 +2,9 @@ import jieba
 import jieba.analyse
 import jieba.posseg as pseg
 
-allow_poses = ('ns', 'n', 'nz', 'nrt', 'vn', 'v', 't', 'tg',
-               'tg', 'qt', 'mq', 'm', 'nr', 'nt', "vn", 'q', 'l')
+# allow_poses = ('ns', 'n', 'nz', 'nrt', 'vn', 'v', 't', 'tg',
+#                'tg', 'qt', 'mq', 'm', 'nr', 'nt', "vn", 'q', 'l')
+allow_poses = ('ns', 'n', 'nz', 'nrt', 'nr', 'nt')
 # 关键词提取：基于TF-IDF:
 
 

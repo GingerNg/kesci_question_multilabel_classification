@@ -36,6 +36,11 @@ class LabelEncoer():  # 标签编码
     def label_size(self):
         return len(self._id2label)
 
+    def label2name(self, xs):
+        if isinstance(xs, list):
+            return [self.target_names[x] for x in xs]
+        return self.target_names[xs]
+
 
 label_encoder = LabelEncoer()
 
