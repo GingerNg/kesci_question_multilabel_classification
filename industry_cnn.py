@@ -116,8 +116,7 @@ def run(method="train", save_path=None, infer_texts=[]):
                 losses += loss_value
                 overall_losses += loss_value
 
-                y_pred.extend(torch.max(batch_outputs, dim=1)
-                              [1].cpu().numpy().tolist())
+                y_pred.extend(torch.max(batch_outputs, dim=1)[1].cpu().numpy().tolist())
                 y_true.extend(batch_labels.cpu().numpy().tolist())
 
                 nn.utils.clip_grad_norm_(
@@ -176,7 +175,7 @@ def run(method="train", save_path=None, infer_texts=[]):
 
 
 if __name__ == "__main__":
-    run(method="infer",
+    run(method="train",
         save_path="/home/wujinjie/kesci_question_multilabel_classification/data/textcnn/industry/epoch_35.pth",
         infer_texts=["医学，是通过科学或技术的手段处理生命的各种疾病或病变的一种学科，促进病患恢复健康的一种专业。它是生物学的应用学科，分基础医学、临床医学。从生理解剖、分子遗传、生化物理等层面来处理人体疾病的高级科学。它是一个从预防到治疗疾病的系统学科，研究领域大方向包括法医学，动物医学，中医学，口腔医学，临床医学等。",
                     "西湖，位于浙江省杭州市西湖区龙井路1号，杭州市区西部，景区总面积49平方千米，汇水面积为21.22平方千米，湖面面积为6.38平方千米。",

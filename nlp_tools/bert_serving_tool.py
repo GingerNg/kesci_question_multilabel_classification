@@ -21,7 +21,7 @@ class Encoding(object):
         return cosine_similarity(tensors)[0][1]
 
 
-ec = Encoding()
+# ec = Encoding()
 
 
 def bert_enc(sents):

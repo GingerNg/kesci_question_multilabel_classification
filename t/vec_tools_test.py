@@ -16,24 +16,26 @@ festivals = ['元旦', '春节', '清明节', '劳动节', '端午节',
 
 
 if __name__ == "__main__":
-    vecs = []
-    # baike_vec = vec_tool.load_hifile(baike_vec_path)
-    baike_vocab = vocab_builder.BaikeVocab(vocab_path=baike_vocab_path)
-    for fes in festivals:
-        print(fes, " ".join(jieba.cut(fes)))
-        word_ids = baike_vocab.word2id(" ".join(jieba.cut(fes)).split())
-        # print(word_ids)
-        vecs.append(vec_tool.lookup(word_ids, train_type="baike"))
-
+    # vecs = []
+    # # baike_vec = vec_tool.load_hifile(baike_vec_path)
+    # baike_vocab = vocab_builder.BaikeVocab(vocab_path=baike_vocab_path)
     # for fes in festivals:
-    #     print(fes, word_utils.segment(fes))
-    #     vecs.append(vec_tool.lookup(word_utils.segment(fes), train_type="word"))
-    #     # print(vec_tool.lookup(fes))
-    dists = []
-    for i in range(len(vecs)):
-        for j in range(i+1, len(vecs)):
-            print(festivals[i], festivals[j], distances.euclidean_dist(vecs[i], vecs[j]))
-            dists.append(distances.euclidean_dist(vecs[i], vecs[j]))
-    print(min(dists), max(dists))
-    # vec1 = vec_tool.lookup('圣诞节')
-    # vec2 = vec_tool.lookup('圣诞')
+    #     print(fes, " ".join(jieba.cut(fes)))
+    #     word_ids = baike_vocab.word2id(" ".join(jieba.cut(fes)).split())
+    #     # print(word_ids)
+    #     vecs.append(vec_tool.lookup(word_ids, train_type="baike"))
+
+    # # for fes in festivals:
+    # #     print(fes, word_utils.segment(fes))
+    # #     vecs.append(vec_tool.lookup(word_utils.segment(fes), train_type="word"))
+    # #     # print(vec_tool.lookup(fes))
+    # dists = []
+    # for i in range(len(vecs)):
+    #     for j in range(i+1, len(vecs)):
+    #         print(festivals[i], festivals[j], distances.euclidean_dist(vecs[i], vecs[j]))
+    #         dists.append(distances.euclidean_dist(vecs[i], vecs[j]))
+    # print(min(dists), max(dists))
+    # # vec1 = vec_tool.lookup('圣诞节')
+    # # vec2 = vec_tool.lookup('圣诞')
+    chars = "摩旅中国西部纪录片"
+    print(vec_tool.lookup(chars).shape)

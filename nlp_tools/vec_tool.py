@@ -1,6 +1,6 @@
 import codecs
 import numpy as np
-from .keyword_tool import get_keywords
+from nlp_tools.keyword_tool import get_keywords
 from cfg import word_emb_path, char_emb_path, baike_vec_path
 import h5py
 
@@ -47,7 +47,7 @@ def resize_weight(keywords):
 
 
 def lookup(chars, train_type="char"):
-    """[summary]
+    """[字向量，lookup后，sum求平均]
 
     Args:
         char_pre_trained ([type]): [description]
@@ -157,8 +157,3 @@ def get_inter_vocabs(pretrained_vocabs, text_vocab):
     """
     vocab = pretrained_vocabs & text_vocab
     return vocab
-
-
-if __name__ == "__main__":
-    chars = "摩旅中国西部纪录片"
-    print(lookup(chars))

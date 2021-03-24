@@ -263,7 +263,7 @@ def get_examples_bert(data, word_encoder, vocab, label_encoder, max_sent_len=256
         for sent_len, sent_words in sents_words:  # 逐句处理
             token_ids = word_encoder.encode(sent_words)
             sent_len = len(token_ids)
-            token_type_ids = [0] * sent_len
+            token_type_ids = [0] * sent_len  # 全是0
             doc.append([sent_len, token_ids, token_type_ids])
         examples.append([id, len(doc), doc])
 
